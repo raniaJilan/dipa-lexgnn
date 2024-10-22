@@ -23,7 +23,7 @@ Insoo Lee,
 
 ## Usage
 
-- Dataset: `Yelp` and `Amazon` are imported from [dgl.data](https://docs.dgl.ai/api/python/dgl.data.html#node-prediction-datasets)
+- Dataset: `Yelp` and `Amazon` are imported from [dgl.data.fraud](https://docs.dgl.ai/api/python/dgl.data.html#node-prediction-datasets)
 - Run: `python main.py`
 
 ## Citation
