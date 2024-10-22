@@ -5,9 +5,9 @@ The author implementation of the [CIKM 2024](https://cikm2024.org/) short paper:
 [[Paper](https://dl.acm.org/doi/10.1145/3627673.3679956)] [[Poster](./lex_poster.pdf)]
 
 
-[Woochang Hyun](https://github.com/wdhyun/), 
+[Woochang Hyun](https://scholar.google.com/citations?user=lswcPDIAAAAJ), 
 Insoo Lee, 
-[Bongwon Suh](https://scholar.google.co.kr/citations?user=-nlhtEkAAAAJ&hl=en)
+[Bongwon Suh](https://scholar.google.com/citations?user=-nlhtEkAAAAJ)
 
 
 ## Overview
