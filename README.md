@@ -1,6 +1,6 @@
 # LEX-GNN
 
-The author implementation of the [CIKM 2024] short paper  
+The author implementation of the [CIKM 2024](https://cikm2024.org/) short paper  
 **LEX-GNN: Label-Exploring Graph Neural Network for Accurate Fraud Detection**.  
 [[Paper](https://dl.acm.org/doi/10.1145/3627673.3679956)] [[Poster](./lex_poster.pdf)]
 
