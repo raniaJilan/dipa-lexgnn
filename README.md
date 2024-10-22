@@ -31,7 +31,7 @@ Insoo Lee,
 ```bibtex
 @inproceedings{hyu2024lex,
   title={LEX-GNN: Label-Exploring Graph Neural Network for Accurate Fraud Detection},
-  author={Hyun, woochang and Lee, insoo and Suh, Bongwon},
+  author={Hyun, Woochang and Lee, Insoo and Suh, Bongwon},
   booktitle={Proceedings of the 33rd ACM International Conference on Information and Knowledge Management (CIKM'24)},
   year={2024}
 }
