@@ -1,7 +1,7 @@
 # LEX-GNN
 
-The author implementation of the [CIKM 2024](https://cikm2024.org/) short paper  
-**LEX-GNN: Label-Exploring Graph Neural Network for Accurate Fraud Detection**.  
+The author implementation of the [CIKM 2024](https://cikm2024.org/) short paper:  
+**"LEX-GNN: Label-Exploring Graph Neural Network for Accurate Fraud Detection"**.  
 [[Paper](https://dl.acm.org/doi/10.1145/3627673.3679956)] [[Poster](./lex_poster.pdf)]
 
 
@@ -23,7 +23,7 @@ Insoo Lee,
 
 ## Usage
 
-- Dataset: `Yelp` and `Amazon` are imported from [dgl.data.fraud](https://docs.dgl.ai/api/python/dgl.data.html#node-prediction-datasets)
+- Dataset: `Yelp` and `Amazon` are loaded from [dgl.data.fraud](https://docs.dgl.ai/api/python/dgl.data.html#node-prediction-datasets) when the code executed.
 - Run: `python main.py`
 
 ## Citation
