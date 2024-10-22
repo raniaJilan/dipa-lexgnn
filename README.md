@@ -9,7 +9,7 @@ Woochang Hyun, Insoo Lee, [Bongwon Suh](https://scholar.google.co.kr/citations?u
 
 <p align="center">
     <br>
-    <a href="https://github.com/wdhyun/CARE-GNN">
+    <a href="https://github.com/wdhyun/LEX">
         <img src="./lex_overview.png" width="900"/>
     </a>
     <br>
