@@ -33,14 +33,12 @@ def load_data(data_name, seed, train_ratio, test_ratio, n_layer, batch_size):
     idx_valid, idx_test, y_valid, y_test = train_test_split(idx_rest, y_rest, stratify=y_rest, 
                                                             test_size=test_ratio, random_state=seed, shuffle=True)
 
-    # Masking unlabeled nodes
+    # Masking nodes
     graph.ndata["y"] = labels
     y_mask = labels.clone() 
     y_mask[index[:idx_unlabeled]+idx_test+idx_valid] = 2 
     graph.ndata["y_mask"] = y_mask
     graph.ndata["x"] = torch.FloatTensor(features).contiguous()
-
-    print(data_name.upper(), len(idx_train), len(idx_valid), len(idx_test))
     
     # Batch loader
     n_sample = {}

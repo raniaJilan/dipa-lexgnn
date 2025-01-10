@@ -5,11 +5,21 @@ import random
 import numpy as np
 from model import LEXGNN
 from data_handler import load_data
-from model_handler import *
+from model_trainer import *
+
+
+def set_random_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed) 
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_name', type=str, default='yelp', help='Dataset to use: amazon or yelp')
     parser.add_argument('--seed', type=int, default=2, help='Random seed')
@@ -29,6 +39,11 @@ def main():
     parser.add_argument('--beta', type=float, default=0.5)
     
     args = parser.parse_args()
+    print()
+    print('Dataset:', args.data_name.upper())
+
+    # Set seed
+    set_random_seed(args.seed)
 
     # GPU
     device = torch.device(args.cuda_id)
@@ -47,9 +62,9 @@ def main():
 
     # Test 
     auc, f1, gm, auc1 = test(model_best, test_loader)
-    print('-------------------------------------------------------------------------------------')
-    print('AUC_cls:', round(auc,4), ' AUC_pre:', round(auc1,4), ' F1_mac:', round(f1,4), ' G-mean:', round(gm,4))    
-    
+    print('===========================================')
+    print(f'AUC_cls: {auc:.4f} | AUC_pre: {auc1:.4f} | F1-macro: {f1:.4f} | G-mean: {gm:.4f} | Epoch-time: {et:.4f}') 
+    print()  
 
 
 if __name__ == '__main__':

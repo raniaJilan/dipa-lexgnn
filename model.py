@@ -90,7 +90,7 @@ class LEXConv(nn.Module):
         h = self.feat_drop(x)
         q = self.prob_node(h)
         p = torch.softmax(q, dim=1)[:,1]
-        #p = torch.where(y==2, p, y.float())
+        p = torch.where(y==2, p, y.float())
         
         h_self = h[: block.number_of_dst_nodes()]
         h_self = self.w_self(h_self)
@@ -136,6 +136,7 @@ class LEXGNN(nn.Module):
         n_dst = blocks[-1].number_of_dst_nodes()
         x = blocks[0].srcdata['x'].clone()
         y = blocks[0].srcdata['y_mask'].clone()
+        y[:n_dst] = 2 # to avoid label leakage
         
         q_list = []
         for i in range(self.n_layer):
