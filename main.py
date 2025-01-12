@@ -61,9 +61,9 @@ def main():
                                  args.beta, args.lr, args.wd, args.early_stop, args.seed, device)
 
     # Test 
-    auc, f1, gm, auc1 = test(model_best, test_loader)
+    auc, f1, gm, ap, auc1 = test(model_best, test_loader)
     print('===========================================')
-    print(f'AUC_cls: {auc:.4f} | AUC_pre: {auc1:.4f} | F1-macro: {f1:.4f} | G-mean: {gm:.4f} | Epoch-time: {et:.4f}') 
+    print(f'AUC_cls: {auc:.4f} | AUC_pre: {auc1:.4f} | F1-macro: {f1:.4f} | G-mean: {gm:.4f} | AP: {ap:.4f} | Epoch-time: {et:.4f}') 
     print()  
 
 

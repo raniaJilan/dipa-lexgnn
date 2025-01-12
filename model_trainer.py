@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.utils import shuffle
-from sklearn.metrics import f1_score, roc_auc_score, roc_curve
+from sklearn.metrics import f1_score, roc_auc_score, roc_curve, average_precision_score
 
 
 
@@ -40,11 +40,12 @@ def test(model, loader):
 
 	f1_macro = f1_score(labels, output_list[0], average='macro')
 	auc = roc_auc_score(labels, output_list[2])
+	ap = average_precision_score(labels, output_list[2])
 	fpr, tpr, thresholds = roc_curve(labels, output_list[0])
 	gmean = (tpr[1] *(1- fpr[1]))**(1/2)
     
 	auc1 = roc_auc_score(labels, output_list[3])
-	return auc, f1_macro, gmean, auc1
+	return auc, f1_macro, gmean, ap, auc1
 
 
 def train(model, train_loader, valid_loader, epochs, valid_epochs, 
@@ -89,7 +90,7 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
         epoch_time += end_time - start_time
 
         if epoch % valid_epochs == 0:
-            auc_val, f1_val, gmn_val, auc1 = test(model, valid_loader)
+            auc_val, f1_val, gmn_val, ap_val, auc1 = test(model, valid_loader)
 
             if auc_val <= 0.51:
                 #print(f"Epoch: {epoch}, Suboptimal initial values. Re-initializing model weights.")
