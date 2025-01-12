@@ -1,3 +1,6 @@
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/lex-gnn-label-exploring-graph-neural-network/fraud-detection-on-amazon-fraud)](https://paperswithcode.com/sota/fraud-detection-on-amazon-fraud?p=lex-gnn-label-exploring-graph-neural-network)
+![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/lex-gnn-label-exploring-graph-neural-network/fraud-detection-on-yelp-fraud)](https://paperswithcode.com/sota/fraud-detection-on-yelp-fraud?p=lex-gnn-label-exploring-graph-neural-network)
+
 # LEX-GNN
 
 The author implementation of the [CIKM 2024](https://cikm2024.org/) short paper:  
