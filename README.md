@@ -25,7 +25,7 @@ Insoo Lee,
 
 
 ## Usage
-
+- Requirements: Torch and DGL
 - Dataset: `Yelp` and `Amazon` are loaded from [dgl.data.fraud](https://docs.dgl.ai/api/python/dgl.data.html#node-prediction-datasets) upon code execution.
 - Run: `python main.py`
 
