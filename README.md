@@ -21,7 +21,7 @@ Insoo Lee,
     </a>
 <p>
 
-**L**abel-**Ex**ploring **G**raph **N**eural **N**etwork (**LEX-GNN**) is a GNN-based fraud detector that predicts the fraud likelihood of nodes in a semi-supervised manner and adaptively adjusts the message passing pipeline for enhanced detection.
+**L**abel-**Ex**ploring **G**raph **N**eural **N**etwork (**LEX-GNN**) is a GNN-based fraud detector that predicts the fraud probability of nodes in a semi-supervised manner and adaptively adjusts the message passing pipeline for improved accuracy.
 
 
 ## Usage
