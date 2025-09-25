@@ -4,10 +4,44 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from sklearn.utils import shuffle
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve, average_precision_score, precision_score, recall_score
 
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=None, gamma=2.0, reduction='mean'):
+        super().__init__()
+        # alpha: None | float | list/tuple/tensor per-class weight
+        self.gamma = gamma
+        self.reduction = reduction
+        if alpha is None:
+            self.alpha = None
+        elif isinstance(alpha, (list, tuple)):
+            self.alpha = torch.tensor(alpha, dtype=torch.float32)
+        else:
+            self.alpha = torch.tensor([1 - float(alpha), float(alpha)], dtype=torch.float32)  # binary helper
 
+    def forward(self, logits, targets):
+        # logits: [N, C], targets: [N] (Long)
+        targets = targets.long()
+        log_probs = F.log_softmax(logits, dim=1)         # [N, C]
+        probs     = log_probs.exp()                      # [N, C]
+
+        log_pt = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)  # [N]
+        pt     = probs.gather(1, targets.unsqueeze(1)).squeeze(1)      # [N]
+
+        if self.alpha is not None:
+            alpha = self.alpha.to(logits.device, dtype=logits.dtype)
+            at = alpha.gather(0, targets)                               # per-sample alpha
+            loss = -at * (1 - pt) ** self.gamma * log_pt
+        else:
+            loss = -(1 - pt) ** self.gamma * log_pt
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        if self.reduction == 'sum':
+            return loss.sum()
+        return loss
 
 def reset_model_parameters(model):
     for layer in model.modules():
@@ -58,7 +92,8 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
     model.to(device)
     print()
     
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn_cls = FocalLoss(alpha=[0.25, 0.75], gamma=2.0)   # contoh: lebih beratkan kelas 1 (fraud)
+    loss_fn_aux = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     
     auc_best, f1_best, epoch_best = 1e-10, 1e-10, 0
@@ -79,8 +114,8 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
             output_labels1 = blocks[-1].srcdata['y'].type(torch.LongTensor).cuda()[idx_pre]
 
             logit, q_list = model(blocks)
-            loss = loss_fn(logit, output_labels.squeeze())
-            loss1 = loss_fn(q_list[-1][idx_pre], output_labels1.squeeze())
+            loss = loss_fn_cls(logit, output_labels.squeeze()) #pakai focal
+            loss1 = loss_fn_aux(q_list[-1][idx_pre], output_labels1.squeeze()) #pakai CE
             Loss = loss + loss1 * beta 
 
             Loss.backward()

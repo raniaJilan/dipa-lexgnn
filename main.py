@@ -6,6 +6,8 @@ import numpy as np
 from model import LEXGNN
 from data_handler import load_data
 from model_trainer import *
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def set_random_seed(seed):
@@ -26,7 +28,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=1024)
     parser.add_argument('--train_ratio', type=float, default=0.4, help='Ratio of training data')
     parser.add_argument('--test_ratio', type=float, default=0.67, help='Ratio of test data')
-    parser.add_argument('--epochs', type=int, default=300, help='Number of training epochs')
+    parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs')
     parser.add_argument('--valid_epochs', type=int, default=3)
     parser.add_argument('--early_stop', type=int, default=100)
     parser.add_argument('--lr', type=float, default=0.005, help='Learning rate')
@@ -61,9 +63,9 @@ def main():
                                  args.beta, args.lr, args.wd, args.early_stop, args.seed, device)
 
     # Test 
-    auc, f1, gm, ap, auc1 = test(model_best, test_loader)
+    auc, f1, gm, ap, auc1, prec, rec = test(model_best, test_loader, device)
     print('===========================================')
-    print(f'AUC_cls: {auc:.4f} | AUC_pre: {auc1:.4f} | F1-macro: {f1:.4f} | G-mean: {gm:.4f} | AP: {ap:.4f} | Epoch-time: {et:.4f}') 
+    print(f'AUC_cls: {auc:.4f} | AUC_pre: {auc1:.4f} | F1-macro: {f1:.4f} | P-macro: {prec:.4f} | R-macro: {rec:.4f} | G-mean: {gm:.4f} | AP: {ap:.4f} | Epoch-time: {et:.4f}') 
     print()  
 
 

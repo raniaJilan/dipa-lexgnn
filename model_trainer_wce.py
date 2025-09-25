@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from sklearn.utils import shuffle
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve, average_precision_score, precision_score, recall_score
-
+import torch.nn.functional as F
 
 
 def reset_model_parameters(model):
@@ -50,6 +50,17 @@ def test(model, loader, device):
     auc1 = roc_auc_score(labels, output_list[3])
     return auc, f1_macro, gmean, ap, auc1, prec_macro, rec_macro
 
+def compute_class_weights_from_loader(train_loader, n_classes=2):
+    # Hitung frekuensi label di mini-batch level (pakai CPU saja)
+    import torch
+    counts = torch.zeros(n_classes, dtype=torch.float64)
+    with torch.no_grad():
+        for _, _, blocks in train_loader:
+            y = blocks[-1].dstdata['y'].long().cpu()
+            counts += torch.bincount(y, minlength=n_classes).double()
+    # inverse frequency: sum/(C * count_c)
+    weights = counts.sum() / (n_classes * counts.clamp_min(1))
+    return weights  # tensor di CPU
 
 def train(model, train_loader, valid_loader, epochs, valid_epochs, 
                 beta, lr, weight_decay, early_stop, seed, device):
@@ -58,7 +69,12 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
     model.to(device)
     print()
     
-    loss_fn = nn.CrossEntropyLoss()
+    class_w = compute_class_weights_from_loader(train_loader, n_classes=2)   # CPU tensor
+    class_w = class_w.to(device=device, dtype=torch.float32)                 # pindah ke device
+    print(f"[wCE] class weights (per-class 0..C-1) = {class_w.tolist()}")
+
+    loss_fn_cls = nn.CrossEntropyLoss(weight=class_w)
+    loss_fn_aux = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     
     auc_best, f1_best, epoch_best = 1e-10, 1e-10, 0
@@ -79,8 +95,8 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
             output_labels1 = blocks[-1].srcdata['y'].type(torch.LongTensor).cuda()[idx_pre]
 
             logit, q_list = model(blocks)
-            loss = loss_fn(logit, output_labels.squeeze())
-            loss1 = loss_fn(q_list[-1][idx_pre], output_labels1.squeeze())
+            loss = loss_fn_cls(logit, output_labels.squeeze())
+            loss1 = loss_fn_aux(q_list[-1][idx_pre], output_labels1.squeeze())
             Loss = loss + loss1 * beta 
 
             Loss.backward()

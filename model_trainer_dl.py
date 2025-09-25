@@ -6,8 +6,28 @@ import torch
 import torch.nn as nn
 from sklearn.utils import shuffle
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve, average_precision_score, precision_score, recall_score
+import torch.nn.functional as F
 
+class DiceLoss(nn.Module):
+    def __init__(self, smooth=1.0):
+        super(DiceLoss, self).__init__()
+        self.smooth = smooth
 
+    def forward(self, logits, targets):
+        """
+        logits: [N, C] -> prediksi model (belum softmax)
+        targets: [N]   -> label ground truth (0 atau 1)
+        """
+        # convert ke probabilitas kelas 1
+        probs = torch.softmax(logits, dim=1)[:, 1]   # ambil kolom kelas 1
+        targets = targets.float()                   # [N] jadi float
+
+        intersection = (probs * targets).sum()
+        dice = (2. * intersection + self.smooth) / (
+            probs.sum() + targets.sum() + self.smooth
+        )
+
+        return 1 - dice
 
 def reset_model_parameters(model):
     for layer in model.modules():
@@ -58,7 +78,8 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
     model.to(device)
     print()
     
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn_cls = DiceLoss(smooth=1.0)
+    loss_fn_aux = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     
     auc_best, f1_best, epoch_best = 1e-10, 1e-10, 0
@@ -79,8 +100,8 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
             output_labels1 = blocks[-1].srcdata['y'].type(torch.LongTensor).cuda()[idx_pre]
 
             logit, q_list = model(blocks)
-            loss = loss_fn(logit, output_labels.squeeze())
-            loss1 = loss_fn(q_list[-1][idx_pre], output_labels1.squeeze())
+            loss = loss_fn_cls(logit, output_labels.squeeze())
+            loss1 = loss_fn_aux(q_list[-1][idx_pre], output_labels1.squeeze())
             Loss = loss + loss1 * beta 
 
             Loss.backward()
