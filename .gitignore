@@ -1,3 +1,6 @@
 __pycache__/*
 data/*
 *.csv
+updated_src/__pycache__/*
+updated_src/*.zip
+updated_src/*.md
