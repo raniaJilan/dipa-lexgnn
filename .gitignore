@@ -3,4 +3,6 @@ data/*
 *.csv
 updated_src/__pycache__/*
 updated_src/*.zip
-updated_src/*.md
+updated_src/*.md.ipynb_checkpoints/
+updated_src/results/
+.ipynb_checkpoints/

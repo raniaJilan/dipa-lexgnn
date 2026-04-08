@@ -274,7 +274,7 @@ def run_multi_seed_experiment(args):
     # ------------------------------------------------------------------
     print(f"\nLoading {args.data_name.upper()} dataset...")
     n_input, train_loader, valid_loader, test_loader = load_processed_data(
-        args.data_name, hparams['batch_size'], hparams['n_layer']
+        args.data_name, hparams['batch_size'], hparams['n_layer'], num_workers=4,
     )
     print(f"Input feature dimension: {n_input}")
 
