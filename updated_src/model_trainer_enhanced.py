@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.utils import shuffle
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve, average_precision_score, precision_score, recall_score
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 # Limit CPU usage to prevent high CPU utilization
 torch.set_num_threads(20)
@@ -332,24 +334,29 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
     # Initialize model
     model.apply(reset_model_parameters)
     model.to(device)
-    print(f"\nTraining with {loss_name.upper()} loss")
-    
+    _is_ddp = dist.is_initialized()
+    _rank = dist.get_rank() if _is_ddp else 0
+    if _is_ddp:
+        model = DDP(model, device_ids=[device.index])
+    if _rank == 0:
+        print(f"\nTraining with {loss_name.upper()} loss")
+
     # Create loss functions
     if loss_name == 'contrastive':
-        # Contrastive loss needs special handling
         main_loss_fn = get_loss_function(loss_name, **loss_params)
-        aux_loss_fn = CrossEntropyLoss()  # Auxiliary loss remains CE
+        aux_loss_fn = CrossEntropyLoss()
         use_contrastive = True
     else:
         main_loss_fn = get_loss_function(loss_name, **loss_params)
-        aux_loss_fn = CrossEntropyLoss()  # Auxiliary loss remains CE
+        aux_loss_fn = CrossEntropyLoss()
         use_contrastive = False
-    
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    
+
     auc_best, f1_best, epoch_best = 1e-10, 1e-10, 0
     epoch = 1
     total_time = 0.0
+    model_best = copy.deepcopy(model.module if _is_ddp else model)
     
     while epoch <= epochs:
         model.train()
