@@ -1,6 +1,7 @@
 import os
 import argparse
 import torch
+import torch.distributed as dist
 import random
 import numpy as np
 from model import LEXGNN
@@ -221,7 +222,9 @@ def main():
     parser.add_argument('--beta', type=float, default=0.5, 
                        help='Weight for auxiliary loss (label exploration)')
     parser.add_argument('--cuda_id', type=int, default=0)
-    
+    parser.add_argument('--ddp', action='store_true',
+                        help='Enable DistributedDataParallel (launch with torchrun)')
+
     # Experiment mode
     parser.add_argument('--mode', type=str, default='single', 
                        choices=['single', 'comparative'],
@@ -260,12 +263,19 @@ def main():
                        help='Smoothing parameter for Dice loss')
     
     args = parser.parse_args()
-    
-    # Run experiment based on mode
-    if args.mode == 'single':
-        run_single_experiment(args)
-    else:  # comparative
-        run_comparative_study(args)
+
+    if args.ddp:
+        dist.init_process_group('nccl')
+        args.cuda_id = int(os.environ.get('LOCAL_RANK', 0))
+
+    try:
+        if args.mode == 'single':
+            run_single_experiment(args)
+        else:  # comparative
+            run_comparative_study(args)
+    finally:
+        if args.ddp:
+            dist.destroy_process_group()
 
 
 if __name__ == '__main__':

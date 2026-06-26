@@ -393,10 +393,12 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
             avg_loss.append(total_loss.item())
             avg_loss_main.append(loss_main.item())
             avg_loss_aux.append(loss_aux.item())
+            del blocks
 
         end_time = time.time()
         epoch_time = end_time - start_time
         total_time += epoch_time
+        torch.cuda.empty_cache()
 
         # Validation
         if epoch % valid_epochs == 0:
@@ -412,24 +414,27 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
 
             if gain_auc > 0:
                 auc_best, f1_best, epoch_best = auc_val, f1_val, epoch
-                model_best = copy.deepcopy(model)
+                model_best = copy.deepcopy(model.module if _is_ddp else model)
 
-                line = (f'Epoch: {str(epoch).rjust(3, " ")} | '
-                       f'Loss: {np.mean(avg_loss):.4f} '
-                       f'(Main: {np.mean(avg_loss_main):.4f}, Aux: {np.mean(avg_loss_aux):.4f}) | '
-                       f'AUC: {auc_best:.4f} | F1: {f1_val:.4f} | '
-                       f'P: {prec_val:.4f} | R: {rec_val:.4f} | '
-                       f'GM: {gmn_val:.4f} | AP: {ap_val:.4f}')
-                print(line)
+                if _rank == 0:
+                    line = (f'Epoch: {str(epoch).rjust(3, " ")} | '
+                           f'Loss: {np.mean(avg_loss):.4f} '
+                           f'(Main: {np.mean(avg_loss_main):.4f}, Aux: {np.mean(avg_loss_aux):.4f}) | '
+                           f'AUC: {auc_best:.4f} | F1: {f1_val:.4f} | '
+                           f'P: {prec_val:.4f} | R: {rec_val:.4f} | '
+                           f'GM: {gmn_val:.4f} | AP: {ap_val:.4f}')
+                    print(line)
         
         # Early stopping
         if (epoch - epoch_best) > early_stop:
-            print(f"Early stopping at epoch {epoch}")
+            if _rank == 0:
+                print(f"Early stopping at epoch {epoch}")
             break
-        
+
         epoch += 1
-    
-    print(f"Best epoch: {epoch_best}, Best AUC: {auc_best:.4f}")
+
+    if _rank == 0:
+        print(f"Best epoch: {epoch_best}, Best AUC: {auc_best:.4f}")
     return model_best, epoch_best, total_time
 
 
