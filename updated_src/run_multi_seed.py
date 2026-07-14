@@ -398,7 +398,7 @@ def parse_args():
 
     # Core experiment settings
     parser.add_argument('--data_name', type=str, default='yelp',
-                        choices=['yelp', 'amazon'],
+                        choices=['yelp', 'amazon', 'comp'],
                         help='Dataset name')
     parser.add_argument('--n_seeds', type=int, default=10,
                         help='Number of random seeds to run (uses first N '

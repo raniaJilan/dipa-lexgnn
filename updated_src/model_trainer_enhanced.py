@@ -354,7 +354,8 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
     epoch = 1
     total_time = 0.0
     model_best = copy.deepcopy(model.module if _is_ddp else model)
-    
+    n_reinit, MAX_REINIT = 0, 3  # cap re-inits so a slow loss can't loop forever
+
     while epoch <= epochs:
         model.train()
         avg_loss, avg_loss_main, avg_loss_aux = [], [], []
@@ -401,15 +402,17 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
         if epoch % valid_epochs == 0:
             auc_val, f1_val, gmn_val, ap_val, auc1, prec_val, rec_val = test(model, valid_loader, device)
 
-            # Re-initialize if initial performance is too poor
-            if auc_val <= 0.51:
+            # Re-initialize if initial performance is too poor (capped: a slow-starting
+            # loss like Dice/margin must not re-init endlessly and hang for days)
+            if auc_val <= 0.51 and n_reinit < MAX_REINIT:
                 model.apply(reset_model_parameters)
                 auc_val = 0
                 epoch = 0
                 auc_best, f1_best, epoch_best = 1e-10, 1e-10, 0
                 model_best = copy.deepcopy(model.module if _is_ddp else model)
+                n_reinit += 1
                 if _rank == 0:
-                    print(f'Epoch: {epoch} | Poor init (AUC<=0.51), reinitializing weights', flush=True)
+                    print(f'Epoch: {epoch} | Poor init (AUC<=0.51), reinit {n_reinit}/{MAX_REINIT}', flush=True)
 
             gain_auc = (auc_val - auc_best) / auc_best if auc_best > 0 else 0
 
