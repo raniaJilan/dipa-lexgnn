@@ -47,7 +47,8 @@ class WeightedCrossEntropyLoss(nn.Module):
             pos_count = labels.sum().item()
             neg_count = len(labels) - pos_count
             if pos_count > 0:
-                weight = torch.tensor([1.0, neg_count / pos_count], device=labels.device)
+                # clamp to 10x to prevent Adam instability on small fraud batches
+                weight = torch.tensor([1.0, min(neg_count / pos_count, 10.0)], device=labels.device)
             else:
                 weight = torch.tensor([1.0, 1.0], device=labels.device)
         else:
@@ -72,7 +73,9 @@ class FocalLoss(nn.Module):
         labels = labels.squeeze()
         ce_loss = F.cross_entropy(logits, labels, reduction='none')
         pt = torch.exp(-ce_loss)
-        focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
+        # per-class alpha: alpha for fraud (1), 1-alpha for benign (0)
+        alpha_t = torch.where(labels == 1, self.alpha, 1.0 - self.alpha)
+        focal_loss = alpha_t * (1 - pt) ** self.gamma * ce_loss
         return focal_loss.mean()
 
 
@@ -339,7 +342,7 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
     if _is_ddp:
         model = DDP(model, device_ids=[device.index])
     if _rank == 0:
-        print(f"\nTraining with {loss_name.upper()} loss")
+        print(f"\nTraining with {loss_name.upper()} loss", flush=True)
 
     # Create loss functions
     if loss_name == 'contrastive':
@@ -409,32 +412,38 @@ def train(model, train_loader, valid_loader, epochs, valid_epochs,
                 model.apply(reset_model_parameters)
                 auc_val = 0
                 epoch = 0
+                auc_best, f1_best, epoch_best = 1e-10, 1e-10, 0
+                model_best = copy.deepcopy(model.module if _is_ddp else model)
+                if _rank == 0:
+                    print(f'Epoch: {epoch} | Poor init (AUC<=0.51), reinitializing weights', flush=True)
 
             gain_auc = (auc_val - auc_best) / auc_best if auc_best > 0 else 0
 
-            if gain_auc > 0:
+            is_best = gain_auc > 0
+            if is_best:
                 auc_best, f1_best, epoch_best = auc_val, f1_val, epoch
                 model_best = copy.deepcopy(model.module if _is_ddp else model)
 
-                if _rank == 0:
-                    line = (f'Epoch: {str(epoch).rjust(3, " ")} | '
-                           f'Loss: {np.mean(avg_loss):.4f} '
-                           f'(Main: {np.mean(avg_loss_main):.4f}, Aux: {np.mean(avg_loss_aux):.4f}) | '
-                           f'AUC: {auc_best:.4f} | F1: {f1_val:.4f} | '
-                           f'P: {prec_val:.4f} | R: {rec_val:.4f} | '
-                           f'GM: {gmn_val:.4f} | AP: {ap_val:.4f}')
-                    print(line)
+            if _rank == 0:
+                marker = ' *' if is_best else ''
+                line = (f'Epoch: {str(epoch).rjust(3, " ")} | '
+                       f'Loss: {np.mean(avg_loss):.4f} '
+                       f'(Main: {np.mean(avg_loss_main):.4f}, Aux: {np.mean(avg_loss_aux):.4f}) | '
+                       f'AUC: {auc_val:.4f} | F1: {f1_val:.4f} | '
+                       f'P: {prec_val:.4f} | R: {rec_val:.4f} | '
+                       f'GM: {gmn_val:.4f} | AP: {ap_val:.4f}{marker}')
+                print(line, flush=True)
         
         # Early stopping
         if (epoch - epoch_best) > early_stop:
             if _rank == 0:
-                print(f"Early stopping at epoch {epoch}")
+                print(f"Early stopping at epoch {epoch}", flush=True)
             break
 
         epoch += 1
 
     if _rank == 0:
-        print(f"Best epoch: {epoch_best}, Best AUC: {auc_best:.4f}")
+        print(f"Best epoch: {epoch_best}, Best AUC: {auc_best:.4f}", flush=True)
     return model_best, epoch_best, total_time
 
 
