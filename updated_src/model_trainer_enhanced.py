@@ -90,17 +90,11 @@ class MarginLoss(nn.Module):
         
     def forward(self, logits, labels):
         labels = labels.squeeze()
-        probs = F.softmax(logits, dim=1)
-        
-        # Get probability of correct class
-        correct_probs = probs[range(len(labels)), labels]
-        
-        # Get probability of incorrect class
-        incorrect_mask = torch.ones_like(probs).scatter_(1, labels.unsqueeze(1), 0)
-        incorrect_probs = (probs * incorrect_mask).max(dim=1)[0]
-        
-        # Margin loss: encourage correct_prob > incorrect_prob + margin
-        loss = F.relu(self.margin - (correct_probs - incorrect_probs))
+        # {0,1} → {-1,+1} so hinge loss matches standard SVM formulation
+        signed_labels = 2 * labels.float() - 1
+        # decision score on raw logits (no softmax — margin losses need logit space)
+        scores = logits[:, 1] - logits[:, 0]
+        loss = F.relu(self.margin - signed_labels * scores)
         return loss.mean()
 
 
